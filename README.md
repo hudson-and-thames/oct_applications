@@ -32,7 +32,7 @@ In a Jupyter Notebook (python):
 
 ### Notes
 * Your code for the implementation should be contained in a .py file that you import into your notebook. Please don't have large chunks of code in your notebook.
-* Your function must take in a pandas DataFrame, not a file directory.
+* Save your data with your PR so that we can evaluate it.
 * Keep in mind that if you don't have enough rows of data to support the number of assets in your universe, the technique will break down.
 
 ## Institutional - Need to Know
