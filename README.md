@@ -20,7 +20,7 @@ Note: The following [textbook](https://www.springer.com/gp/book/9783030472504) p
 
 In a Jupyter Notebook (python):
 
-1. Download and save your universe of stocks (use 500-700 shares) (Can use Yahoo finance to get shares data. Checkout the [yfinance](https://github.com/ranaroussi/yfinance) package.)
+1. Download and save your universe of stocks (use 200-300 shares) (Can use Yahoo finance to get shares data. Checkout the [yfinance](https://github.com/ranaroussi/yfinance) package.)(Else you can use [Polygon](https://polygon.io/))
 1. Implement Section III: Proposed Pairs Selection Framework (A and B, Section C if you really want to impress)
 1. Create a set of functions/class for the end-user to make use of.
 1. Make sure to add docstrings and follow PEP8 code style checks. Have plenty of inline comments, good variable names and don't over complicate things unnecessarily. It should be easy for the user to make use of.
@@ -33,6 +33,7 @@ In a Jupyter Notebook (python):
 ### Notes
 * Your code for the implementation should be contained in a .py file that you import into your notebook. Please don't have large chunks of code in your notebook.
 * Your function must take in a pandas DataFrame, not a file directory.
+* Keep in mind that if you don't have enough rows of data to support the number of assets in your universe, the technique will break down.
 
 ## Institutional - Need to Know
 * **Company Name**: Hudson and Thames Quantitative Research
