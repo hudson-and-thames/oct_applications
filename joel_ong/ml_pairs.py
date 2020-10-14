@@ -17,6 +17,7 @@ from multiprocessing import Pool
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import OPTICS
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 
 from statsmodels.tsa.stattools import coint
@@ -51,6 +52,7 @@ class MLPairs:
         self._tickers = universe.columns.tolist()
         self.features = None
         self.cluster_ids = None
+        self.valid_cluster_ids = None
         self.selected_pairs = None
         self.seed = seed
         random.seed(seed)
@@ -84,7 +86,8 @@ class MLPairs:
                 The recommended PCA dimensions is lower bounded at 1 and
                 upper bounded at 15.
             """)
-        universe_return_df = self.universe.pct_change() \
+        universe_df = self.universe.copy(deep=True)
+        universe_return_df = universe_df.pct_change() \
             .iloc[1:] \
             .copy(deep=True)
         universe_return_df.fillna(0, inplace=True)
@@ -96,13 +99,32 @@ class MLPairs:
             universe_norm_return_df.dropna(how='all', axis=0, inplace=True)
         else:
             scaler = StandardScaler()
-            universe_norm_return_df = scaler.fit_transform(universe_return_df)
-        pca = PCA(n_components=top_k, random_state=self.seed)
-        pca.fit(universe_norm_return_df)
+            universe_norm_return = scaler.fit_transform(universe_return_df)
+        pca = PCA(
+            n_components=top_k,
+            random_state=self.seed,
+        ).fit(
+            universe_norm_return
+        )
         self.features = pd.DataFrame(
             pca.components_.T,
             index=self._tickers
         )
+
+    def plot_principle_components(self, figsize: tuple = (15, 10)) -> None:
+        if self.features is None:
+            raise ValueError(
+                """
+                Please perform dimensionality reduction to generate feature
+                representation for each assets in the universe before running
+                this function.
+                """
+            )
+        sm = pd.plotting.scatter_matrix(
+            self.features, alpha=.2, figsize=figsize)
+        # Hide all ticks
+        [s.set_xticks(()) for s in sm.reshape(-1)]
+        [s.set_yticks(()) for s in sm.reshape(-1)]
 
     def clustering(self, technique: str, params: dict) -> None:
         """
@@ -144,29 +166,30 @@ class MLPairs:
             index=self._tickers,
             columns=['cluster_id']
         )
-        self.cluster_ids = cluster_ids[cluster_ids['cluster_id'] != -1]
+        self.cluster_ids = cluster_ids
+        self.valid_cluster_ids = cluster_ids[cluster_ids['cluster_id'] != -1]
         num_of_pairs = int(len(self._tickers) * (len(self._tickers) - 1) / 2)
         logger.info(
             f'Total number of candidate pairs (before clustering): {num_of_pairs}.')
-        num_of_pairs = int((self.cluster_ids.value_counts()
-                            * (self.cluster_ids.value_counts() - 1)).sum() / 2)
+        num_of_pairs = int((self.valid_cluster_ids.value_counts(
+        ) * (self.valid_cluster_ids.value_counts() - 1)).sum() / 2)
         logger.info(
             f'Total number of candidate pairs (after clustering): {num_of_pairs}.')
 
     def plot_cluster_members(self, figsize: tuple = (15, 10)) -> None:
-        if self.cluster_ids is None:
+        if self.valid_cluster_ids is None:
             raise ValueError(
                 "Please perform clustering to generate clusters of assets before running this function."
             )
         fig, ax = plt.subplots(figsize=figsize)
         plt.barh(
-            range(len(self.cluster_ids.value_counts())),
-            self.cluster_ids.value_counts(),
+            range(len(self.valid_cluster_ids.value_counts())),
+            self.valid_cluster_ids.value_counts(),
         )
         plt.title('Cluster Members')
         plt.xlabel('Number of Stock')
         plt.ylabel('Cluster ID')
-        for i, v in enumerate(self.cluster_ids.value_counts().tolist()):
+        for i, v in enumerate(self.valid_cluster_ids.value_counts().tolist()):
             ax.text(v + 1, i, str(v))
         plt.show()
 
@@ -176,12 +199,13 @@ class MLPairs:
         figsize: tuple = (
             15,
             10)) -> None:
-        valid_cluster_ids = self.cluster_ids['cluster_id'].unique().tolist()
+        valid_cluster_ids = self.valid_cluster_ids['cluster_id'].unique(
+        ).tolist()
         if cluster_id not in valid_cluster_ids:
             raise ValueError(
                 f'{cluster_id} is not a valid cluster id. Available ids are {valid_cluster_ids}')
-        members = self.cluster_ids[self.cluster_ids['cluster_id']
-                                   == cluster_id].index.tolist()
+        members = self.valid_cluster_ids[self.valid_cluster_ids['cluster_id']
+                                         == cluster_id].index.tolist()
         (
             np.log(
                 self.universe[members] /
@@ -189,6 +213,34 @@ class MLPairs:
             figsize=figsize,
             title=f'Demean Log Price for Stocks in Cluster {cluster_id}',
             legend=False)
+        plt.show()
+
+    def plot_tsne(self, params: dict, figsize: tuple = (15, 10)) -> None:
+        params['random_state'] = self.seed
+        tsne = TSNE(**params).fit_transform(self.features)
+
+        fig, ax = plt.subplots(figsize=figsize)
+
+        scatter = ax.scatter(
+            tsne[(self.cluster_ids.cluster_id != - 1).values.flatten(), 0],
+            tsne[(self.cluster_ids.cluster_id != - 1).values.flatten(), 1],
+            s=200,
+            alpha=0.3,
+            c=self.cluster_ids[(self.cluster_ids.cluster_id != -1)].values.flatten(),
+        )
+
+        legend1 = ax.legend(
+            *scatter.legend_elements(),
+            title="Cluster ID"
+        )
+
+        scatter = ax.scatter(
+            tsne[(self.cluster_ids.cluster_id == - 1).values.flatten(), 0],
+            tsne[(self.cluster_ids.cluster_id == - 1).values.flatten(), 1],
+            s=200,
+            alpha=.05,
+        )
+
         plt.show()
 
     def pairs_selection(
@@ -220,7 +272,7 @@ class MLPairs:
                 If True, multiprocessing will be use.
 
         """
-        if self.cluster_ids is None:
+        if self.valid_cluster_ids is None:
             raise ValueError(
                 """
                 Please perform clustering to generate clusters of assets before
@@ -228,8 +280,8 @@ class MLPairs:
                 """
             )
         candidate_pairs = []
-        for id in self.cluster_ids.value_counts().index:
-            assets = self.cluster_ids[self.cluster_ids['cluster_id'] == id].index.tolist(
+        for id in self.valid_cluster_ids.value_counts().index:
+            assets = self.valid_cluster_ids[self.valid_cluster_ids['cluster_id'] == id].index.tolist(
             )
             candidate_pairs += [
                 pair for pair in combinations(assets, 2)
