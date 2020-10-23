@@ -46,7 +46,17 @@ class MLPairs:
 
     def __init__(self, universe: pd.DataFrame, seed: int = 42) -> None:
         """
+            Initialize the MLPairs object.
 
+            Parameters
+            ----------
+              universe (pd.DataFrame):
+                A dataframe that contains the time series of equities session
+                close price.
+
+              seed (int):
+                The random number generator needs a number to start with
+                (a seed value), to be able to generate a random number.
         """
         self.universe = universe
         self._tickers = universe.columns.tolist()
@@ -68,7 +78,7 @@ class MLPairs:
             there should be a consideration for the data dimensionality.
 
             Parameters
-
+            ----------
               top_k (int):
                 Determine number of PCA dimensions, upper bounded at 15.
 
@@ -76,9 +86,6 @@ class MLPairs:
                 Determine the rolling window if we were to apply rolling
                 normalization to the price series. If None, we will apply
                 normalization using the global mean and standard deviation.
-
-            Returns:
-
         """
         logger.info(f'Begining Part A. Dimensionality reduction.')
         if top_k <= 0 or top_k > 15:
@@ -247,7 +254,7 @@ class MLPairs:
         probabilities and tries to minimize the Kullback-Leibler divergence
         between the joint probabilities of the low-dimensional embedding and
         the high-dimensional data.
-        
+
         Parameters
         ----------
             figsize: tuple
@@ -255,17 +262,15 @@ class MLPairs:
         """
         params['random_state'] = self.seed
         tsne = TSNE(**params).fit_transform(self.features)
-
         fig, ax = plt.subplots(figsize=figsize)
-
         scatter = ax.scatter(
             tsne[(self.cluster_ids.cluster_id != - 1).values.flatten(), 0],
             tsne[(self.cluster_ids.cluster_id != - 1).values.flatten(), 1],
             s=200,
             alpha=0.3,
-            c=self.cluster_ids[(self.cluster_ids.cluster_id != -1)].values.flatten(),
+            c=self.cluster_ids[(
+                self.cluster_ids.cluster_id != -1)].values.flatten(),
         )
-
         legend1 = ax.legend(
             *scatter.legend_elements(),
             title="Cluster ID"
