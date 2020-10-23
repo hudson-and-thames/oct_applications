@@ -10,6 +10,16 @@ from tqdm import tqdm
 
 
 def download_dataset_yh(universe: list, filename: str = "universe") -> None:
+    """
+        Download equity adjusted close data from Yahoo! Finance.
+
+        Parameters
+        ----------
+        universe: list
+            List of tickers in the universe.
+        filename: str
+            File name to save the dataframe as.
+    """
     df = yf.download(
         tickers=universe,
         period="10y",
@@ -35,6 +45,25 @@ def download_dataset_av(
     usecols: list = [
         'time',
         'close']) -> pd.DataFrame:
+    """
+        Download intra-day equity close data from Alpha Vantage.
+
+        Parameters
+        ----------
+        ticker: str
+            Symbol of the stock of interest. (e.g. Amazon - AMZN)
+        interval: str
+            Intra-day time frame (e.g. 5min, 10min and etc.)
+        time_slices: list
+            Two years of minute-level intraday data contains over 2 million
+            data points, which can take up to Gigabytes of memory. To ensure
+            optimal API response speed, the trailing 2 years of intraday data
+            is evenly divided into 24 "slices"
+        api_key: str
+            API key to access Alpha Vantage's API endpoint
+        usecols: list
+            List of columns that we are interested to use from the
+    """
     df = []
     for time_slice in time_slices:
         temp_df = pd.read_csv(
@@ -61,6 +90,26 @@ def mp_dataset_av(
             'time',
             'close'],
         filename: str = "universe") -> None:
+    """
+        Multiprocessing wrapper to download intra-day equity close price from
+        Alpha Vantage
+
+        Parameters
+        ----------
+        universe: list
+            List of tickers in the universe.
+        interval: str
+            Intra-day time frame (e.g. 5min, 10min and etc.)
+        time_slices: list
+            Two years of minute-level intraday data contains over 2 million
+            data points, which can take up to Gigabytes of memory. To ensure
+            optimal API response speed, the trailing 2 years of intraday data
+            is evenly divided into 24 "slices"
+        api_key: str
+            API key to access Alpha Vantage's API endpoint
+        usecols: list
+            List of columns that we are interested to use from the
+    """
     ticker_data = []
     with mp.Pool() as pool:
         iterable = [

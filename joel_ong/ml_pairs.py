@@ -67,7 +67,8 @@ class MLPairs:
             an Unsupervised Learning algorithm is applied using these data features,
             there should be a consideration for the data dimensionality.
 
-            Args:
+            Parameters
+
               top_k (int):
                 Determine number of PCA dimensions, upper bounded at 15.
 
@@ -112,6 +113,15 @@ class MLPairs:
         )
 
     def plot_principle_components(self, figsize: tuple = (15, 10)) -> None:
+        """
+            Draw a matrix of scatter plots based on the principle components
+            obtained from perform dimensionality reduction.
+
+            Parameters
+            ----------
+                figsize: tuple
+                    width, height of plot in inches.
+        """
         if self.features is None:
             raise ValueError(
                 """
@@ -130,7 +140,8 @@ class MLPairs:
         """
             Apply an appropriate clustering algorithm.
 
-            Args:
+            Parameters
+            ----------
               technique (str):
                 Supported clustering technique,
                 1. DBSCAN (https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)
@@ -177,6 +188,13 @@ class MLPairs:
             f'Total number of candidate pairs (after clustering): {num_of_pairs}.')
 
     def plot_cluster_members(self, figsize: tuple = (15, 10)) -> None:
+        """
+
+        Parameters
+        ----------
+            figsize: tuple
+                width, height of plot in inches.
+        """
         if self.valid_cluster_ids is None:
             raise ValueError(
                 "Please perform clustering to generate clusters of assets before running this function."
@@ -199,6 +217,13 @@ class MLPairs:
         figsize: tuple = (
             15,
             10)) -> None:
+        """
+
+        Parameters
+        ----------
+            figsize: tuple
+                width, height of plot in inches.
+        """
         valid_cluster_ids = self.valid_cluster_ids['cluster_id'].unique(
         ).tolist()
         if cluster_id not in valid_cluster_ids:
@@ -216,6 +241,18 @@ class MLPairs:
         plt.show()
 
     def plot_tsne(self, params: dict, figsize: tuple = (15, 10)) -> None:
+        """
+        Plot t-SNE to visualize principal components obtained from dimensionality
+        reduction. t-SNE converts similarities between data points to joint
+        probabilities and tries to minimize the Kullback-Leibler divergence
+        between the joint probabilities of the low-dimensional embedding and
+        the high-dimensional data.
+        
+        Parameters
+        ----------
+            figsize: tuple
+                width, height of plot in inches.
+        """
         params['random_state'] = self.seed
         tsne = TSNE(**params).fit_transform(self.features)
 
@@ -260,9 +297,9 @@ class MLPairs:
             all available computation power to enumerate through the universe of
             candidate pairs.
 
-            Args:
+            Parameters
+            ----------
               max_lag (int):
-
 
               convenient_periods (int):
                 Specify the trading period. This will be use to filter out pairs
@@ -323,6 +360,24 @@ def pairs_selection_test(
         price2: pd.Series,
         max_lag: int,
         convenient_periods: int) -> bool:
+    """
+    Parameters
+    ----------
+    price1 : pd.Series
+        Price series of 1st security.
+    price2 : pd.Series
+        Price series of 2nd security.
+    max_lag: int
+
+    convenient_periods: int
+        Specify the trading period. This will be use to filter out pairs
+        whereby its half-life is not coherent with the trading period.
+
+    Returns
+    -------
+    bool
+        whether the pairs pass the selection test.
+    """
     price1.replace([np.inf, -np.inf], np.nan, inplace=True)
     price1.dropna(inplace=True)
     price2.replace([np.inf, -np.inf], np.nan, inplace=True)
