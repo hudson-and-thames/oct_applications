@@ -275,14 +275,12 @@ class MLPairs:
             *scatter.legend_elements(),
             title="Cluster ID"
         )
-
         scatter = ax.scatter(
             tsne[(self.cluster_ids.cluster_id == - 1).values.flatten(), 0],
             tsne[(self.cluster_ids.cluster_id == - 1).values.flatten(), 1],
             s=200,
             alpha=.05,
         )
-
         plt.show()
 
     def pairs_selection(
